@@ -1,628 +1,1032 @@
 <!DOCTYPE html>
-<html lang="fr" class="h-full">
+<html lang="fr">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Sondage National : projet numérique </title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <script>
-        tailwind.config = {
-            theme: {
-                extend: {
-                    colors: {
-                        zedBg: '#f0ebe3',       // Fond beige clair
-                        zedCard: '#ffffff',      // Cartes blanches
-                        zedBorder: '#e2d9cf',   // Bordures beige douces
-                        zedTextMuted: '#78716c', // Texte secondaire brun gris
-                        zedBeige: '#0075ff',     // Bleu Zed (accent principal)
-                        zedBeigeHover: '#0060dd',// Bleu Zed au survol
-                    },
-                    fontFamily: {
-                        sans: ['Inter', '-apple-system', 'BlinkMacSystemFont', 'Segoe UI', 'Roboto', 'sans-serif'],
-                    }
-                }
-            }
-        }
-    </script>
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-    
-    <style>
-        body {
-            font-family: 'Inter', sans-serif;
-            background-color: #f0ebe3; /* fond beige clair chaud */
-            color: #1c1917;            /* texte sombre charbon */
-        }
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Sondage National – Bridge CG</title>
 
-        /* Grain de fond subtil pour un rendu premium */
-        body::before {
-            content: '';
-            position: fixed;
-            inset: 0;
-            background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.04'/%3E%3C/svg%3E");
-            pointer-events: none;
-            z-index: 0;
-            opacity: 0.5;
-        }
-        main, footer { position: relative; z-index: 1; }
+  <!-- Google Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com"/>
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700;900&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet"/>
 
-        /* Lueur ambiante derrière le contenu principal */
-        .glow-orb {
-            position: fixed;
-            border-radius: 50%;
-            filter: blur(100px);
-            pointer-events: none;
-            z-index: 0;
-        }
-        .glow-orb-1 {
-            width: 600px; height: 600px;
-            background: radial-gradient(circle, rgba(0,117,255,0.07) 0%, transparent 65%);
-            top: -180px; left: -120px;
-        }
-        .glow-orb-2 {
-            width: 500px; height: 500px;
-            background: radial-gradient(circle, rgba(0,96,221,0.05) 0%, transparent 65%);
-            bottom: -120px; right: -100px;
-        }
+  <!-- Supabase SDK -->
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 
-        /* Animations d'entrée */
-        @keyframes fadeSlideUp {
-            from { opacity: 0; transform: translateY(18px); }
-            to   { opacity: 1; transform: translateY(0); }
-        }
-        @keyframes fadeIn {
-            from { opacity: 0; }
-            to   { opacity: 1; }
-        }
-        .anim-header  { animation: fadeSlideUp 0.55s ease both; }
-        .anim-form    { animation: fadeSlideUp 0.65s 0.1s ease both; }
-        .anim-results { animation: fadeIn 0.5s ease both; }
+  <style>
+    /* ===========================
+       DESIGN SYSTEM – VARIABLES
+    =========================== */
+    :root {
+      --bg:        #0d0b08;
+      --bg2:       #161209;
+      --surface:   #1e1810;
+      --surface2:  #2a2015;
+      --gold:      #c9922a;
+      --gold-lt:   #e8b84b;
+      --amber:     #f0a500;
+      --cream:     #f5ead6;
+      --muted:     #8a7a60;
+      --danger:    #c0392b;
+      --success:   #27ae60;
+      --border:    rgba(201,146,42,0.20);
+      --border-hl: rgba(201,146,42,0.60);
+      --radius:    14px;
+      --font-head: 'Playfair Display', Georgia, serif;
+      --font-body: 'DM Sans', system-ui, sans-serif;
+    }
 
-        /* Cartes de projet */
-        .project-card {
-            position: relative;
-            overflow: hidden;
-            transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease, background-color 0.2s ease;
-        }
-        .project-card::after {
-            content: '';
-            position: absolute;
-            inset: 0;
-            background: linear-gradient(135deg, rgba(255,255,255,0.015) 0%, transparent 60%);
-            pointer-events: none;
-            border-radius: inherit;
-        }
-        .project-card:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 8px 30px rgba(0,0,0,0.15), 0 0 0 1px rgba(0,0,0,0.04);
-        }
-        .project-card.selected {
-            box-shadow: 0 0 0 1px #0075ff, 0 8px 30px rgba(0,117,255,0.12);
-        }
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
-        /* Inputs focus amélioré */
-        input:focus, textarea:focus {
-            box-shadow: 0 0 0 3px rgba(0,117,255,0.15);
-        }
+    html { scroll-behavior: smooth; }
 
-        /* Bouton submit */
-        #submit-btn {
-            position: relative;
-            overflow: hidden;
-        }
-        #submit-btn::after {
-            content: '';
-            position: absolute;
-            inset: 0;
-            background: linear-gradient(135deg, rgba(255,255,255,0.15) 0%, transparent 60%);
-            pointer-events: none;
-        }
-        #submit-btn:hover { letter-spacing: 0.03em; }
+    body {
+      background: var(--bg);
+      color: var(--cream);
+      font-family: var(--font-body);
+      font-size: 16px;
+      line-height: 1.6;
+      min-height: 100vh;
+      overflow-x: hidden;
+    }
 
-        /* Custom scrollbar */
-        ::-webkit-scrollbar { width: 6px; }
-        ::-webkit-scrollbar-track { background: #f0ebe3; }
-        ::-webkit-scrollbar-thumb { background: #d5ccc0; border-radius: 4px; }
-        ::-webkit-scrollbar-thumb:hover { background: #bfb5a8; }
+    /* ===========================
+       BACKGROUND TEXTURE
+    =========================== */
+    body::before {
+      content: '';
+      position: fixed; inset: 0;
+      background:
+        radial-gradient(ellipse 80% 60% at 20% 10%, rgba(201,146,42,0.07) 0%, transparent 60%),
+        radial-gradient(ellipse 60% 80% at 80% 90%, rgba(240,165,0,0.05) 0%, transparent 60%),
+        url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23c9922a' fill-opacity='0.03'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E");
+      pointer-events: none;
+      z-index: 0;
+    }
 
-        /* Ligne séparatrice animée sous le header */
-        .header-rule {
-            display: block;
-            height: 1px;
-            background: linear-gradient(to right, transparent, rgba(0,117,255,0.25) 30%, rgba(0,117,255,0.25) 70%, transparent);
-            margin: 2.5rem auto 0;
-            max-width: 320px;
-        }
-    </style>
+    /* ===========================
+       LAYOUT
+    =========================== */
+    .wrapper {
+      position: relative;
+      z-index: 1;
+      max-width: 900px;
+      margin: 0 auto;
+      padding: 0 20px 80px;
+    }
+
+    /* ===========================
+       HEADER
+    =========================== */
+    header {
+      text-align: center;
+      padding: 60px 0 40px;
+    }
+
+    .badge {
+      display: inline-block;
+      background: linear-gradient(135deg, var(--gold), var(--amber));
+      color: #0d0b08;
+      font-size: 10px;
+      font-weight: 700;
+      letter-spacing: 3px;
+      text-transform: uppercase;
+      padding: 5px 16px;
+      border-radius: 100px;
+      margin-bottom: 20px;
+    }
+
+    header h1 {
+      font-family: var(--font-head);
+      font-size: clamp(2.2rem, 6vw, 3.8rem);
+      font-weight: 900;
+      line-height: 1.1;
+      background: linear-gradient(135deg, var(--cream) 30%, var(--gold-lt));
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+      margin-bottom: 16px;
+    }
+
+    header p.subtitle {
+      color: var(--muted);
+      font-size: 1.05rem;
+      font-weight: 300;
+      max-width: 520px;
+      margin: 0 auto;
+    }
+
+    .divider {
+      width: 60px;
+      height: 3px;
+      background: linear-gradient(90deg, var(--gold), var(--amber));
+      border-radius: 2px;
+      margin: 24px auto;
+    }
+
+    /* ===========================
+       COUNTER BANNER
+    =========================== */
+    .counter-banner {
+      display: flex;
+      justify-content: center;
+      gap: 12px;
+      flex-wrap: wrap;
+      margin-bottom: 40px;
+    }
+
+    .counter-pill {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 100px;
+      padding: 10px 24px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      font-size: 0.9rem;
+      color: var(--muted);
+    }
+
+    .counter-pill span.num {
+      font-family: var(--font-head);
+      font-size: 1.4rem;
+      color: var(--gold-lt);
+      font-weight: 700;
+    }
+
+    .dot-live {
+      width: 8px; height: 8px;
+      border-radius: 50%;
+      background: var(--success);
+      animation: pulse-dot 1.5s infinite;
+    }
+
+    @keyframes pulse-dot {
+      0%, 100% { opacity: 1; transform: scale(1); }
+      50%       { opacity: 0.4; transform: scale(0.8); }
+    }
+
+    /* ===========================
+       CARDS – SECTION FORMULAIRE
+    =========================== */
+    .section-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 32px;
+      margin-bottom: 24px;
+      animation: fadeUp 0.5s ease both;
+    }
+
+    @keyframes fadeUp {
+      from { opacity: 0; transform: translateY(20px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+
+    .section-title {
+      font-family: var(--font-head);
+      font-size: 1.3rem;
+      color: var(--gold-lt);
+      margin-bottom: 20px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .section-title::before {
+      content: '';
+      display: block;
+      width: 4px; height: 20px;
+      background: linear-gradient(180deg, var(--gold), var(--amber));
+      border-radius: 2px;
+      flex-shrink: 0;
+    }
+
+    /* ===========================
+       FORM FIELDS
+    =========================== */
+    .fields-row {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 16px;
+      margin-bottom: 8px;
+    }
+
+    @media (max-width: 560px) {
+      .fields-row { grid-template-columns: 1fr; }
+    }
+
+    .field-group {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+
+    .field-group label {
+      font-size: 0.78rem;
+      font-weight: 600;
+      letter-spacing: 1px;
+      text-transform: uppercase;
+      color: var(--muted);
+    }
+
+    .field-group input,
+    .field-group textarea {
+      background: var(--bg2);
+      border: 1.5px solid var(--border);
+      border-radius: 10px;
+      color: var(--cream);
+      font-family: var(--font-body);
+      font-size: 0.97rem;
+      padding: 12px 16px;
+      outline: none;
+      transition: border-color 0.2s, box-shadow 0.2s;
+      width: 100%;
+    }
+
+    .field-group input::placeholder,
+    .field-group textarea::placeholder { color: var(--muted); opacity: 0.6; }
+
+    .field-group input:focus,
+    .field-group textarea:focus {
+      border-color: var(--gold);
+      box-shadow: 0 0 0 3px rgba(201,146,42,0.15);
+    }
+
+    .field-group textarea { resize: vertical; min-height: 80px; }
+
+    /* ===========================
+       PROJECT GRID
+    =========================== */
+    .projects-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(230px, 1fr));
+      gap: 14px;
+      margin-top: 8px;
+    }
+
+    .project-card {
+      background: var(--bg2);
+      border: 1.5px solid var(--border);
+      border-radius: var(--radius);
+      padding: 18px 16px;
+      cursor: pointer;
+      transition: border-color 0.2s, transform 0.2s, box-shadow 0.2s, background 0.2s;
+      user-select: none;
+    }
+
+    .project-card:hover {
+      border-color: var(--gold);
+      transform: translateY(-3px);
+      box-shadow: 0 8px 24px rgba(201,146,42,0.12);
+    }
+
+    .project-card.selected {
+      border-color: var(--gold-lt);
+      background: rgba(201,146,42,0.10);
+      box-shadow: 0 0 0 3px rgba(201,146,42,0.20), 0 8px 24px rgba(201,146,42,0.15);
+      transform: translateY(-3px);
+    }
+
+    .project-card .proj-num {
+      font-family: var(--font-head);
+      font-size: 1.8rem;
+      font-weight: 900;
+      color: var(--gold);
+      line-height: 1;
+      margin-bottom: 8px;
+    }
+
+    .project-card.selected .proj-num { color: var(--gold-lt); }
+
+    .project-card .proj-icon {
+      font-size: 1.5rem;
+      margin-bottom: 6px;
+    }
+
+    .project-card .proj-name {
+      font-weight: 600;
+      font-size: 0.92rem;
+      color: var(--cream);
+      margin-bottom: 4px;
+      line-height: 1.3;
+    }
+
+    .project-card .proj-desc {
+      font-size: 0.79rem;
+      color: var(--muted);
+      line-height: 1.4;
+    }
+
+    .project-card .check-mark {
+      display: none;
+      float: right;
+      font-size: 1.1rem;
+      color: var(--gold-lt);
+      margin-top: -4px;
+    }
+
+    .project-card.selected .check-mark { display: block; }
+
+    /* ===========================
+       SUBMIT BUTTON
+    =========================== */
+    .btn-submit {
+      width: 100%;
+      padding: 16px;
+      background: linear-gradient(135deg, var(--gold) 0%, var(--amber) 100%);
+      color: #0d0b08;
+      font-family: var(--font-body);
+      font-size: 1rem;
+      font-weight: 700;
+      letter-spacing: 0.5px;
+      border: none;
+      border-radius: 12px;
+      cursor: pointer;
+      margin-top: 20px;
+      transition: opacity 0.2s, transform 0.15s, box-shadow 0.2s;
+      box-shadow: 0 4px 20px rgba(201,146,42,0.3);
+    }
+
+    .btn-submit:hover:not(:disabled) {
+      opacity: 0.92;
+      transform: translateY(-1px);
+      box-shadow: 0 8px 28px rgba(201,146,42,0.4);
+    }
+
+    .btn-submit:disabled {
+      opacity: 0.45;
+      cursor: not-allowed;
+      transform: none;
+    }
+
+    /* ===========================
+       TOAST / ALERT
+    =========================== */
+    #toast {
+      position: fixed;
+      bottom: 28px; left: 50%;
+      transform: translateX(-50%) translateY(80px);
+      background: var(--surface2);
+      border: 1px solid var(--border-hl);
+      border-radius: 12px;
+      padding: 14px 24px;
+      font-size: 0.9rem;
+      color: var(--cream);
+      z-index: 9999;
+      transition: transform 0.35s cubic-bezier(.34,1.56,.64,1), opacity 0.3s;
+      opacity: 0;
+      max-width: 90vw;
+      text-align: center;
+      box-shadow: 0 16px 40px rgba(0,0,0,0.5);
+    }
+
+    #toast.show {
+      transform: translateX(-50%) translateY(0);
+      opacity: 1;
+    }
+
+    #toast.success { border-color: rgba(39,174,96,0.5); }
+    #toast.error   { border-color: rgba(192,57,43,0.5); }
+
+    /* ===========================
+       RÉSULTATS
+    =========================== */
+    #results-section { display: none; }
+
+    .result-header {
+      text-align: center;
+      padding: 40px 0 28px;
+    }
+
+    .result-header h2 {
+      font-family: var(--font-head);
+      font-size: clamp(1.8rem, 4vw, 2.6rem);
+      background: linear-gradient(135deg, var(--cream), var(--gold-lt));
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+      margin-bottom: 8px;
+    }
+
+    .voted-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      background: rgba(39,174,96,0.12);
+      border: 1px solid rgba(39,174,96,0.3);
+      color: #5dcc8a;
+      border-radius: 100px;
+      padding: 8px 20px;
+      font-size: 0.85rem;
+      font-weight: 500;
+      margin-bottom: 28px;
+    }
+
+    /* Bars */
+    .result-list { display: flex; flex-direction: column; gap: 12px; }
+
+    .result-item {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 16px 20px;
+      transition: border-color 0.2s;
+    }
+
+    .result-item.my-vote {
+      border-color: var(--gold);
+      background: rgba(201,146,42,0.07);
+    }
+
+    .result-item-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 10px;
+      gap: 8px;
+    }
+
+    .result-item-name {
+      font-weight: 600;
+      font-size: 0.92rem;
+      color: var(--cream);
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .rank-num {
+      font-family: var(--font-head);
+      font-size: 1.1rem;
+      color: var(--gold);
+      font-weight: 700;
+      min-width: 24px;
+    }
+
+    .result-item.my-vote .rank-num { color: var(--gold-lt); }
+
+    .result-meta {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .result-count {
+      font-size: 0.82rem;
+      color: var(--muted);
+    }
+
+    .result-pct {
+      font-family: var(--font-head);
+      font-size: 1.1rem;
+      font-weight: 700;
+      color: var(--gold-lt);
+    }
+
+    .bar-track {
+      background: var(--bg2);
+      border-radius: 100px;
+      height: 8px;
+      overflow: hidden;
+    }
+
+    .bar-fill {
+      height: 100%;
+      border-radius: 100px;
+      background: linear-gradient(90deg, var(--gold), var(--amber));
+      transition: width 0.6s cubic-bezier(.4,0,.2,1);
+    }
+
+    .my-vote-tag {
+      font-size: 0.7rem;
+      font-weight: 700;
+      letter-spacing: 1px;
+      text-transform: uppercase;
+      background: linear-gradient(135deg, var(--gold), var(--amber));
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+
+    /* Feed */
+    .feed-section {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 24px;
+      margin-top: 20px;
+    }
+
+    .feed-title {
+      font-family: var(--font-head);
+      font-size: 1.1rem;
+      color: var(--gold-lt);
+      margin-bottom: 16px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    #feed-list {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      max-height: 240px;
+      overflow-y: auto;
+    }
+
+    #feed-list::-webkit-scrollbar { width: 4px; }
+    #feed-list::-webkit-scrollbar-track { background: transparent; }
+    #feed-list::-webkit-scrollbar-thumb { background: var(--border-hl); border-radius: 4px; }
+
+    .feed-item {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      font-size: 0.84rem;
+      padding: 8px 0;
+      border-bottom: 1px solid var(--border);
+      animation: slideIn 0.3s ease both;
+    }
+
+    .feed-item:last-child { border-bottom: none; }
+
+    @keyframes slideIn {
+      from { opacity: 0; transform: translateX(-10px); }
+      to   { opacity: 1; transform: translateX(0); }
+    }
+
+    .feed-avatar {
+      width: 30px; height: 30px;
+      border-radius: 50%;
+      background: linear-gradient(135deg, var(--gold), var(--amber));
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 0.75rem;
+      font-weight: 700;
+      color: #0d0b08;
+      flex-shrink: 0;
+    }
+
+    .feed-text { color: var(--muted); }
+    .feed-text strong { color: var(--cream); }
+    .feed-proj { color: var(--gold); font-weight: 500; }
+
+    /* ===========================
+       FOOTER
+    =========================== */
+    footer {
+      text-align: center;
+      padding: 32px 0 16px;
+      font-size: 0.78rem;
+      color: var(--muted);
+      letter-spacing: 0.5px;
+    }
+
+    footer span { color: var(--gold); }
+
+    /* ===========================
+       LOADING
+    =========================== */
+    #loading-overlay {
+      position: fixed; inset: 0;
+      background: var(--bg);
+      z-index: 9998;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-direction: column;
+      gap: 16px;
+      transition: opacity 0.4s;
+    }
+
+    #loading-overlay.hidden { opacity: 0; pointer-events: none; }
+
+    .loader-ring {
+      width: 40px; height: 40px;
+      border: 3px solid var(--border);
+      border-top-color: var(--gold);
+      border-radius: 50%;
+      animation: spin 0.8s linear infinite;
+    }
+
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    .loader-text {
+      font-size: 0.85rem;
+      color: var(--muted);
+      letter-spacing: 2px;
+      text-transform: uppercase;
+    }
+
+    /* helpers */
+    .hidden { display: none !important; }
+
+    /* ===========================
+       RESPONSIVE
+    =========================== */
+    @media (max-width: 640px) {
+      .section-card { padding: 20px 16px; }
+      .projects-grid { grid-template-columns: 1fr 1fr; }
+    }
+
+    @media (max-width: 380px) {
+      .projects-grid { grid-template-columns: 1fr; }
+    }
+  </style>
 </head>
-<body class="min-h-full flex flex-col justify-between py-10 px-4 sm:px-6 lg:px-8">
-    <div class="glow-orb glow-orb-1"></div>
-    <div class="glow-orb glow-orb-2"></div>
+<body>
 
-    <main class="max-w-4xl mx-auto w-full flex-grow flex flex-col justify-center">
-        
-        <header class="text-center mb-12 anim-header">
-            <div class="inline-flex items-center gap-2 px-4 py-1.5 rounded-full border border-zedBorder bg-zedCard text-xs font-medium text-zedBeige mb-6 shadow-lg shadow-black/5">
-                <span class="flex h-2 w-2 rounded-full bg-emerald-400 animate-pulse"></span>
-                🇨🇬&nbsp; Sondage Public — République du Congo
-                <span class="ml-1 text-zedBorder">|</span>
-                <span class="text-zedTextMuted">2026</span>
-            </div>
+<!-- LOADING OVERLAY -->
+<div id="loading-overlay">
+  <div class="loader-ring"></div>
+  <div class="loader-text">Chargement…</div>
+</div>
 
-            <h1 class="text-3xl sm:text-4xl md:text-5xl font-bold tracking-tight mb-4 leading-tight">
-                <span class="text-zinc-900">Quel projet numérique</span><br>
-                <span class="bg-gradient-to-r from-blue-600 via-blue-500 to-blue-700 bg-clip-text text-transparent">
-                    changera le Congo-Brazzaville ?
-                </span>
-            </h1>
+<!-- TOAST NOTIFICATION -->
+<div id="toast"></div>
 
-            <p class="text-sm sm:text-base text-zedTextMuted max-w-xl mx-auto leading-relaxed">
-                Choisissez l'application numérique capable de résoudre un vrai défi structurel<br class="hidden sm:block"> rencontré au Congo. <strong class="text-zinc-600 font-medium">Votre voix compte.</strong>
-            </p>
+<div class="wrapper">
 
-            <span class="header-rule"></span>
-        </header>
+  <!-- HEADER -->
+  <header>
+    <div class="badge">🇨🇬 République du Congo</div>
+    <h1>Sondage National<br>Bridge Congo</h1>
+    <div class="divider"></div>
+    <p class="subtitle">
+      Participez à la consultation nationale et aidez-nous à prioriser
+      le projet numérique qui transformera le Congo.
+    </p>
+  </header>
 
-        <section id="vote-section" class="space-y-8 anim-form">
-            <form id="sondage-form" class="space-y-8">
-                
-                <div class="bg-zedCard border border-zedBorder rounded-xl p-6 space-y-4">
-                    <h2 class="text-lg font-semibold text-zinc-900 flex items-center gap-2">
-                        <span class="text-zedBeige">01.</span> Qui êtes-vous ?
-                    </h2>
-                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                        <div>
-                            <label for="firstname" class="block text-xs font-medium text-zedTextMuted uppercase tracking-wider mb-2">Prénom</label>
-                            <input type="text" id="firstname" required
-                                class="w-full bg-zedBg border border-zedBorder rounded-lg px-4 py-2.5 text-zinc-900 placeholder-zinc-400 focus:outline-none focus:border-zedBeige transition-colors text-sm"
-                                placeholder="Ex: Emmanuel Jeancy">
-                        </div>
-                        <div>
-                            <label for="lastname" class="block text-xs font-medium text-zedTextMuted uppercase tracking-wider mb-2">Nom</label>
-                            <input type="text" id="lastname" required
-                                class="w-full bg-zedBg border border-zedBorder rounded-lg px-4 py-2.5 text-zinc-900 placeholder-zinc-400 focus:outline-none focus:border-zedBeige transition-colors text-sm"
-                                placeholder="Ex: BILOMBO-SILAHO">
-                        </div>
-                    </div>
-                </div>
+  <!-- COUNTER BANNER -->
+  <div class="counter-banner">
+    <div class="counter-pill">
+      <div class="dot-live"></div>
+      <span class="num" id="total-votes">—</span>
+      <span>votes enregistrés</span>
+    </div>
+    <div class="counter-pill">
+      <span>🗳️</span>
+      <span class="num">7</span>
+      <span>projets à évaluer</span>
+    </div>
+  </div>
 
-                <div class="space-y-4">
-                    <h2 class="text-lg font-semibold text-zinc-900 flex items-center gap-2 px-1">
-                        <span class="text-zedBeige">02.</span> Sélectionnez le projet le plus utile
-                    </h2>
-                    
-                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4" id="projects-grid">
-                        <div class="project-card bg-zedCard border border-zedBorder hover:border-zinc-300 rounded-xl p-5 cursor-pointer transition-all relative flex flex-col justify-between" data-project-id="1">
-                            <div>
-                                <div class="flex items-start justify-between gap-3 mb-2">
-                                    <h3 class="font-semibold text-zinc-900 text-base flex items-center gap-2">
-                                        <span>1️⃣</span> Plateforme de logement / immobilier
-                                    </h3>
-                                    <div class="custom-radio h-5 w-5 rounded-full border border-zedBorder flex items-center justify-center shrink-0 mt-0.5 transition-all">
-                                        <div class="inner-dot h-2.5 w-2.5 rounded-full bg-transparent transition-all"></div>
-                                    </div>
-                                </div>
-                                <p class="text-xs text-zedTextMuted leading-relaxed">
-                                    Aide à trouver facilement des maisons, appartements ou terrains à louer/vendre. Annonces claires avec photos, prix et quartiers.
-                                </p>
-                            </div>
-                            <div class="mt-3 pt-3 border-t border-zinc-200/80 text-[11px] text-emerald-600 flex items-center gap-1.5">
-                                <span>✅</span> Problème résolu : Arnaques des démarcheurs et manque d'infos fiables.
-                            </div>
-                        </div>
+  <!-- =====================
+       SECTION VOTE
+  ===================== -->
+  <div id="vote-section">
 
-                        <div class="project-card bg-zedCard border border-zedBorder hover:border-zinc-300 rounded-xl p-5 cursor-pointer transition-all relative flex flex-col justify-between" data-project-id="2">
-                            <div>
-                                <div class="flex items-start justify-between gap-3 mb-2">
-                                    <h3 class="font-semibold text-zinc-900 text-base flex items-center gap-2">
-                                        <span>2️⃣</span> Système de gestion scolaire
-                                    </h3>
-                                    <div class="custom-radio h-5 w-5 rounded-full border border-zedBorder flex items-center justify-center shrink-0 mt-0.5 transition-all">
-                                        <div class="inner-dot h-2.5 w-2.5 rounded-full bg-transparent transition-all"></div>
-                                    </div>
-                                </div>
-                                <p class="text-xs text-zedTextMuted leading-relaxed">
-                                    Gestion des élèves, notes, bulletins et paiements. Notifications SMS automatiques aux parents pour le suivi des résultats ou absences.
-                                </p>
-                            </div>
-                            <div class="mt-3 pt-3 border-t border-zinc-200/80 text-[11px] text-emerald-600 flex items-center gap-1.5">
-                                <span>✅</span> Problème résolu : Gestion papier opaque et rupture école-parents.
-                            </div>
-                        </div>
-
-                        <div class="project-card bg-zedCard border border-zedBorder hover:border-zinc-300 rounded-xl p-5 cursor-pointer transition-all relative flex flex-col justify-between" data-project-id="3">
-                            <div>
-                                <div class="flex items-start justify-between gap-3 mb-2">
-                                    <h3 class="font-semibold text-zinc-900 text-base flex items-center gap-2">
-                                        <span>3️⃣</span> Plateforme pour Artisans
-                                    </h3>
-                                    <div class="custom-radio h-5 w-5 rounded-full border border-zedBorder flex items-center justify-center shrink-0 mt-0.5 transition-all">
-                                        <div class="inner-dot h-2.5 w-2.5 rounded-full bg-transparent transition-all"></div>
-                                    </div>
-                                </div>
-                                <p class="text-xs text-zedTextMuted leading-relaxed">
-                                    Trouver rapidement des électriciens, plombiers, mécaniciens fiables avec profils vérifiés, avis clients et système de notation après service.
-                                </p>
-                            </div>
-                            <div class="mt-3 pt-3 border-t border-zinc-200/80 text-[11px] text-emerald-600 flex items-center gap-1.5">
-                                <span>✅</span> Problème résolu : Difficulté à dégoter un bon artisan en urgence.
-                            </div>
-                        </div>
-
-                        <div class="project-card bg-zedCard border border-zedBorder hover:border-zinc-300 rounded-xl p-5 cursor-pointer transition-all relative flex flex-col justify-between" data-project-id="4">
-                            <div>
-                                <div class="flex items-start justify-between gap-3 mb-2">
-                                    <h3 class="font-semibold text-zinc-900 text-base flex items-center gap-2">
-                                        <span>4️⃣</span> Application de transport local
-                                    </h3>
-                                    <div class="custom-radio h-5 w-5 rounded-full border border-zedBorder flex items-center justify-center shrink-0 mt-0.5 transition-all">
-                                        <div class="inner-dot h-2.5 w-2.5 rounded-full bg-transparent transition-all"></div>
-                                    </div>
-                                </div>
-                                <p class="text-xs text-zedTextMuted leading-relaxed">
-                                    Commande de taxis facilitée avec estimation du prix du trajet à l'avance, contact direct sécurisé et option de paiement par Mobile Money.
-                                </p>
-                            </div>
-                            <div class="mt-3 pt-3 border-t border-zinc-200/80 text-[11px] text-emerald-600 flex items-center gap-1.5">
-                                <span>✅</span> Problème résolu : Phénomène de demi-terrain et tarifs arbitraires.
-                            </div>
-                        </div>
-
-                        <div class="project-card bg-zedCard border border-zedBorder hover:border-zinc-300 rounded-xl p-5 cursor-pointer transition-all relative flex flex-col justify-between" data-project-id="5">
-                            <div>
-                                <div class="flex items-start justify-between gap-3 mb-2">
-                                    <h3 class="font-semibold text-zinc-900 text-base flex items-center gap-2">
-                                        <span>5️⃣</span> Marketplace locale / vente en ligne
-                                    </h3>
-                                    <div class="custom-radio h-5 w-5 rounded-full border border-zedBorder flex items-center justify-center shrink-0 mt-0.5 transition-all">
-                                        <div class="inner-dot h-2.5 w-2.5 rounded-full bg-transparent transition-all"></div>
-                                    </div>
-                                </div>
-                                <p class="text-xs text-zedTextMuted leading-relaxed">
-                                    Espace structuré pour commerçants et particuliers (mode, tech, alimentation) évitant le désordre des groupes éphémères Facebook/WhatsApp.
-                                </p>
-                            </div>
-                            <div class="mt-3 pt-3 border-t border-zinc-200/80 text-[11px] text-emerald-600 flex items-center gap-1.5">
-                                <span>✅</span> Problème résolu : Manque de visibilité et achats à distance risqués.
-                            </div>
-                        </div>
-
-                        <div class="project-card bg-zedCard border border-zedBorder hover:border-zinc-300 rounded-xl p-5 cursor-pointer transition-all relative flex flex-col justify-between" data-project-id="6">
-                            <div>
-                                <div class="flex items-start justify-between gap-3 mb-2">
-                                    <h3 class="font-semibold text-zinc-900 text-base flex items-center gap-2">
-                                        <span>6️⃣</span> Gestion intelligente de restaurant
-                                    </h3>
-                                    <div class="custom-radio h-5 w-5 rounded-full border border-zedBorder flex items-center justify-center shrink-0 mt-0.5 transition-all">
-                                        <div class="inner-dot h-2.5 w-2.5 rounded-full bg-transparent transition-all"></div>
-                                    </div>
-                                </div>
-                                <p class="text-xs text-zedTextMuted leading-relaxed">
-                                    Menu numérique interactif pour les clients, automatisation des transmissions en cuisine pour les serveurs et statistiques financières pour le manager.
-                                </p>
-                            </div>
-                            <div class="mt-3 pt-3 border-t border-zinc-200/80 text-[11px] text-emerald-600 flex items-center gap-1.5">
-                                <span>✅</span> Problème résolu : Lenteur excessive du service et pertes de stocks.
-                            </div>
-                        </div>
-
-                        <div class="project-card bg-zedCard border border-zedBorder hover:border-zinc-300 rounded-xl p-5 cursor-pointer transition-all relative flex flex-col md:col-span-2 justify-between" data-project-id="7">
-                            <div>
-                                <div class="flex items-start justify-between gap-3 mb-2">
-                                    <h3 class="font-semibold text-zinc-900 text-base flex items-center gap-2">
-                                        <span>7️⃣</span> Système de santé & Prise de RDV médical
-                                    </h3>
-                                    <div class="custom-radio h-5 w-5 rounded-full border border-zedBorder flex items-center justify-center shrink-0 mt-0.5 transition-all">
-                                        <div class="inner-dot h-2.5 w-2.5 rounded-full bg-transparent transition-all"></div>
-                                    </div>
-                                </div>
-                                <p class="text-xs text-zedTextMuted leading-relaxed">
-                                    Trouver une clinique ou un médecin spécialiste proche, planifier un rendez-vous en ligne et suivre en temps réel la liste des pharmacies de garde ainsi que le stock des médicaments vitaux.
-                                </p>
-                            </div>
-                            <div class="mt-3 pt-3 border-t border-zinc-200/80 text-[11px] text-emerald-600 flex items-center gap-1.5">
-                                <span>✅</span> Problème résolu : Files d'attente interminables et trajets inutiles pour trouver un médicament urgent.
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="bg-zedCard border border-zedBorder rounded-xl p-6 space-y-4">
-                    <h2 class="text-lg font-semibold text-zinc-900 flex items-center gap-2">
-                        <span class="text-zedBeige">03.</span> Un message à faire passer ? <span class="text-xs text-zedTextMuted font-normal">(Optionnel)</span>
-                    </h2>
-                    <div>
-                        <label for="message" class="block text-xs font-medium text-zedTextMuted uppercase tracking-wider mb-2">Votre avis ou suggestion de projet</label>
-                        <textarea id="message" rows="4"
-                            class="w-full bg-zedBg border border-zedBorder rounded-lg px-4 py-3 text-zinc-900 placeholder-zinc-400 focus:outline-none focus:border-zedBeige transition-colors text-sm resize-none"
-                            placeholder="Écrivez un mot d'encouragement ou proposez une autre idée pertinente..."></textarea>
-                    </div>
-                </div>
-
-                <div class="pt-2 flex flex-col sm:flex-row items-center justify-between gap-4 bg-zedCard border border-zedBorder rounded-xl p-5">
-                    <p class="text-xs text-zedTextMuted flex items-center gap-2">
-                        <svg class="w-4 h-4 text-emerald-500 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"/></svg>
-                        Vote sécurisé — un seul vote par appareil
-                    </p>
-                    <button type="submit" id="submit-btn"
-                        class="w-full sm:w-auto flex items-center justify-center gap-2.5 px-8 py-3.5 bg-zedBeige text-white font-semibold rounded-lg text-sm hover:bg-zedBeigeHover focus:outline-none active:scale-[0.98] transition-all tracking-wide shadow-lg shadow-blue-500/25">
-                        <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7"/></svg>
-                        Soumettre mon vote
-                    </button>
-                </div>
-            </form>
-        </section>
-
-        <section id="results-section" class="hidden space-y-10 anim-results">
-            
-            <div class="relative overflow-hidden bg-gradient-to-br from-blue-50 via-white to-zedCard border border-zedBorder rounded-2xl p-8 text-center">
-                <div class="absolute top-0 left-1/2 -translate-x-1/2 w-64 h-px bg-gradient-to-r from-transparent via-emerald-400/40 to-transparent"></div>
-
-                <div class="inline-flex items-center justify-center h-14 w-14 rounded-full bg-emerald-500/10 border border-emerald-500/20 text-emerald-600 mb-4">
-                    <svg class="h-7 w-7" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
-                    </svg>
-                </div>
-                <h2 class="text-xl sm:text-2xl font-bold text-zinc-900 mb-2">Merci pour votre contribution !</h2>
-                <p class="text-sm text-zedTextMuted max-w-md mx-auto leading-relaxed">
-                    Votre vote a bien été enregistré. Votre message a été directement transmis<br class="hidden sm:block"> par email au porteur du projet.
-                </p>
-                <div class="mt-5 flex justify-center gap-6 text-xs text-zedTextMuted">
-                    <span class="flex items-center gap-1.5"><span class="text-emerald-500">✓</span> Vote enregistré</span>
-                    <span class="flex items-center gap-1.5"><span class="text-emerald-500">✓</span> Email envoyé</span>
-                    <span class="flex items-center gap-1.5"><span class="text-emerald-500">✓</span> Résultats en direct</span>
-                </div>
-            </div>
-
-            <div class="bg-zedCard border border-zedBorder rounded-xl p-6 space-y-6">
-                <div class="flex items-center justify-between border-b border-zedBorder pb-4">
-                    <h3 class="text-lg font-semibold text-zinc-900 flex items-center gap-2">
-                        📊 Classement des projets en temps réel
-                    </h3>
-                    <span class="text-xs text-zedTextMuted bg-zinc-100 px-2.5 py-1 rounded-md border border-zedBorder">
-                        Mise à jour en direct
-                    </span>
-                </div>
-                
-                <div class="space-y-4" id="stats-container">
-                    </div>
-            </div>
-
-            <div class="bg-zedCard border border-zedBorder rounded-xl p-6 space-y-4">
-                <h3 class="text-base font-semibold text-zinc-900 flex items-center gap-2">
-                    👥 Activité récente des votants <span class="text-xs font-normal text-zedTextMuted">(Les 50 derniers)</span>
-                </h3>
-                <div class="border border-zedBorder rounded-lg divide-y divide-zedBorder bg-zedBg max-h-64 overflow-y-auto" id="recent-voters-list">
-                    </div>
-            </div>
-        </section>
-
-    </main>
-
-    <footer class="mt-16 border-t border-zedBorder/40 pt-6 max-w-4xl mx-auto w-full pb-8">
-        <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 text-xs text-zedTextMuted px-1">
-            <div class="space-y-1.5">
-                <span>&copy; 2026 — Propulsé par <strong class="text-zedBeige font-semibold">Bridge-Congo</strong></span>
-                <div class="flex flex-col sm:flex-row gap-2 sm:gap-4 text-[11px]">
-                    <a href="tel:+242055068156" class="flex items-center gap-1.5 hover:text-zedBeige transition-colors">
-                        <svg class="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z"/></svg>
-                        05-056-81-56
-                    </a>
-                    <a href="mailto:manuenrose.pro@gmail.com" class="flex items-center gap-1.5 hover:text-zedBeige transition-colors">
-                        <svg class="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/></svg>
-                        manuenrose.pro@gmail.com
-                    </a>
-                </div>
-            </div>
-            <span class="flex items-center gap-1.5">
-                <span class="inline-block h-1.5 w-1.5 rounded-full bg-emerald-400 animate-pulse"></span>
-                Sondage actif — résultats mis à jour en temps réel
-            </span>
+    <!-- Identité -->
+    <div class="section-card">
+      <div class="section-title">Votre identité</div>
+      <div class="fields-row">
+        <div class="field-group">
+          <label for="firstname">Prénom</label>
+          <input type="text" id="firstname" placeholder="Ex : Jean-Pierre" autocomplete="given-name"/>
         </div>
-    </footer>
+        <div class="field-group">
+          <label for="lastname">Nom</label>
+          <input type="text" id="lastname" placeholder="Ex : Moukila" autocomplete="family-name"/>
+        </div>
+      </div>
+    </div>
 
-   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <!-- Projets -->
+    <div class="section-card" style="animation-delay:0.1s">
+      <div class="section-title">Choisissez un projet</div>
+      <div class="projects-grid" id="projects-grid">
 
-    <script>
-        // CONFIGURATION SUPABASE (À remplacer avec tes accès réels)
-        const SUPABASE_URL = "https://qalosmjleiylofpjgxmx.supabase.co"; 
-        const SUPABASE_ANON_KEY = "sb_publishable_aRigeCEdwPbIFJ_2WfF6Cg__ukcZDhK"; // Ta clé affichée sur ta capture
+        <div class="project-card" data-id="1">
+          <span class="check-mark">✓</span>
+          <div class="proj-icon">🩺</div>
+          <div class="proj-num">01</div>
+          <div class="proj-name">Santé Connectée</div>
+          <div class="proj-desc">Plateforme de télémédecine et dossiers médicaux numériques pour le Congo.</div>
+        </div>
 
-        // Initialisation du client Supabase
-        const supabase = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+        <div class="project-card" data-id="2">
+          <span class="check-mark">✓</span>
+          <div class="proj-icon">🎓</div>
+          <div class="proj-num">02</div>
+          <div class="proj-name">Éducation Numérique</div>
+          <div class="proj-desc">Application d'enseignement en ligne pour les écoles des zones rurales et urbaines.</div>
+        </div>
 
-        // Noms réels des projets pour affichage dans les stats
-        const projectNames = {
-            1: "🏠 Logement & Immobilier",
-            2: "📚 Système de Gestion Scolaire",
-            3: "🛠️ Plateforme pour Artisans",
-            4: "🚖 Application de Transport Local",
-            5: "🛍️ Marketplace & Vente en Ligne",
-            6: "🍳 Gestion de Restaurant",
-            7: "🏥 Système de Santé & RDV Médical"
-        };
+        <div class="project-card" data-id="3">
+          <span class="check-mark">✓</span>
+          <div class="proj-icon">🌾</div>
+          <div class="proj-num">03</div>
+          <div class="proj-name">AgriTech Congo</div>
+          <div class="proj-desc">Solutions numériques pour moderniser l'agriculture et la chaîne alimentaire.</div>
+        </div>
 
-        let selectedProjectId = null;
+        <div class="project-card" data-id="4">
+          <span class="check-mark">✓</span>
+          <div class="proj-icon">💰</div>
+          <div class="proj-num">04</div>
+          <div class="proj-name">Fintech & Paiement</div>
+          <div class="proj-desc">Système de paiement mobile inclusif pour les populations non-bancarisées.</div>
+        </div>
 
-        // 1. GESTION DE LA SÉLECTION DES CARTES
-        const cards = document.querySelectorAll('.project-card');
-        cards.forEach(card => {
-            card.addEventListener('click', () => {
-                cards.forEach(c => {
-                    c.classList.remove('border-zedBeige', 'bg-blue-50');
-                    c.classList.add('border-zedBorder', 'bg-zedCard');
-                    c.querySelector('.custom-radio').classList.remove('border-zedBeige');
-                    c.querySelector('.inner-dot').classList.remove('bg-zedBeige');
-                    c.querySelector('.inner-dot').classList.add('bg-transparent');
-                });
+        <div class="project-card" data-id="5">
+          <span class="check-mark">✓</span>
+          <div class="proj-icon">⚡</div>
+          <div class="proj-num">05</div>
+          <div class="proj-name">Énergie Intelligente</div>
+          <div class="proj-desc">Gestion numérique de l'accès à l'électricité et aux énergies renouvelables.</div>
+        </div>
 
-                card.classList.remove('border-zedBorder', 'bg-zedCard');
-                card.classList.add('border-zedBeige', 'bg-blue-50');
-                
-                const radio = card.querySelector('.custom-radio');
-                const dot = card.querySelector('.inner-dot');
-                radio.classList.add('border-zedBeige');
-                dot.classList.remove('bg-transparent');
-                dot.classList.add('bg-zedBeige');
+        <div class="project-card" data-id="6">
+          <span class="check-mark">✓</span>
+          <div class="proj-icon">🏛️</div>
+          <div class="proj-num">06</div>
+          <div class="proj-name">e-Gouvernance</div>
+          <div class="proj-desc">Dématérialisation des services administratifs : état civil, impôts, permis.</div>
+        </div>
 
-                selectedProjectId = parseInt(card.getAttribute('data-project-id'));
-            });
-        });
+        <div class="project-card" data-id="7">
+          <span class="check-mark">✓</span>
+          <div class="proj-icon">🔗</div>
+          <div class="proj-num">07</div>
+          <div class="proj-name">Connectivité Rurale</div>
+          <div class="proj-desc">Infrastructure de connexion internet haut-débit pour les zones reculées.</div>
+        </div>
 
-        // 2. CHARGEMENT ET CALCUL DES STATISTIQUES RÉELLES
-        async function fetchAndRenderStats(userVoteId = null, userFullName = "") {
-            const statsContainer = document.getElementById('stats-container');
-            if (!statsContainer) return;
+      </div>
+    </div>
 
-            // Récupération de tous les votes depuis ta table Supabase
-            const { data: votes, error } = await supabase
-                .from('votes')
-                .select('projet_vote, nom_votant');
+    <!-- Message optionnel -->
+    <div class="section-card" style="animation-delay:0.2s">
+      <div class="section-title">Message (facultatif)</div>
+      <div class="field-group">
+        <label for="message-input">Suggestions, commentaires, ou raisons de votre choix</label>
+        <textarea id="message-input" placeholder="Partagez votre vision pour le Congo numérique…"></textarea>
+      </div>
+    </div>
 
-            if (error) {
-                console.error("Erreur de récupération des données :", error);
-                return;
-            }
+    <!-- Bouton -->
+    <button class="btn-submit" id="submit-btn" disabled>
+      Sélectionnez un projet pour voter →
+    </button>
 
-            // Initialisation des compteurs pour chaque projet (de 1 à 7)
-            const counts = { 1: 0, 2: 0, 3: 0, 4: 0, 5: 0, 6: 0, 7: 0 };
-            votes.forEach(v => {
-                if (counts[v.projet_vote] !== undefined) {
-                    counts[v.projet_vote]++;
-                }
-            });
+  </div><!-- /vote-section -->
 
-            const totalVotes = votes.length || 1; // Évite la division par zéro si premier vote
 
-            // Tri des projets par score décroissant
-            const sortedProjects = Object.keys(counts).sort((a, b) => counts[b] - counts[a]);
+  <!-- =====================
+       SECTION RÉSULTATS
+  ===================== -->
+  <div id="results-section">
 
-            // Rendu graphique des barres
-            statsContainer.innerHTML = '';
-            sortedProjects.forEach(id => {
-                const count = counts[id];
-                const percentage = Math.round((count / totalVotes) * 100);
-                const isUserChoice = parseInt(id) === userVoteId;
+    <div class="result-header">
+      <h2>Résultats en Direct</h2>
+      <div class="voted-badge">
+        <span>✅</span>
+        <span>Vous avez voté — merci pour votre participation !</span>
+      </div>
+    </div>
 
-                const barHtml = `
-                    <div class="space-y-1.5">
-                        <div class="flex justify-between text-xs sm:text-sm">
-                            <span class="font-medium ${isUserChoice ? 'text-zedBeige font-semibold' : 'text-zinc-700'}">
-                                ${projectNames[id]} ${isUserChoice ? '<span class="text-[10px] bg-blue-50 border border-zedBorder text-zedBeige px-1.5 py-0.5 rounded font-normal ml-1">Votre vote</span>' : ''}
-                            </span>
-                            <span class="text-zedTextMuted font-medium">${count} vote(s) (${percentage}%)</span>
-                        </div>
-                        <div class="w-full bg-zinc-200 rounded-full h-2.5 border border-zinc-300 overflow-hidden">
-                            <div class="h-full rounded-full transition-all duration-1000 ${isUserChoice ? 'bg-zedBeige' : 'bg-zinc-400'}" style="width: ${percentage}%"></div>
-                        </div>
-                    </div>
-                `;
-                statsContainer.insertAdjacentHTML('beforeend', barHtml);
-            });
+    <!-- Stats globales -->
+    <div class="section-card">
+      <div class="section-title">Classement des Projets</div>
+      <div class="result-list" id="result-list">
+        <!-- Rempli dynamiquement -->
+      </div>
+    </div>
 
-            // Rendu de la liste d'activité des 50 derniers votants réels
-            const votersList = document.getElementById('recent-voters-list');
-            if (votersList) {
-                // Trier les votes récents (les derniers arrivés en haut)
-                const recentVotes = [...votes].reverse().slice(0, 50);
-                votersList.innerHTML = '';
+    <!-- Feed temps réel -->
+    <div class="feed-section">
+      <div class="feed-title">
+        <div class="dot-live"></div>
+        Derniers votants
+      </div>
+      <div id="feed-list">
+        <!-- Rempli dynamiquement -->
+      </div>
+    </div>
 
-                recentVotes.forEach(v => {
-                    const isCurrentUser = v.nom_votant === userFullName;
-                    const voterHtml = `
-                        <div class="flex items-center justify-between p-3.5 text-xs ${isCurrentUser ? 'bg-blue-50/60 font-medium' : ''}">
-                            <div class="flex items-center gap-2 ${isCurrentUser ? 'text-zinc-900' : 'text-zinc-500'}">
-                                <span class="h-1.5 w-1.5 rounded-full ${isCurrentUser ? 'bg-zedBeige' : 'bg-zinc-300'}"></span>
-                                <span>${v.nom_votant}</span>
-                            </div>
-                            <span class="text-[10px] text-zedTextMuted">${isCurrentUser ? "À l'instant" : "Enregistré"}</span>
-                        </div>
-                    `;
-                    votersList.insertAdjacentHTML('beforeend', voterHtml);
-                });
-            }
-        }
+  </div><!-- /results-section -->
 
-        // 3. INTERCEPTION DE LA SOUMISSION ET INSERTION DANS SUPABASE
-        const form = document.getElementById('sondage-form');
-        form.addEventListener('submit', async function(e) {
-            e.preventDefault();
+  <footer>
+    <p>© 2025 <span>Zed Corporation</span> — Sondage National pour le Congo Numérique</p>
+    <p style="margin-top:6px;">Propulsé par Supabase &nbsp;·&nbsp; Hébergé sur GitHub Pages</p>
+    <div style="margin-top:14px; display:flex; justify-content:center; gap:24px; flex-wrap:wrap;">
+      <a href="mailto:manuenrose.pro@gmail.com" style="display:inline-flex; align-items:center; gap:6px; color:var(--gold); text-decoration:none; font-size:0.82rem; transition:opacity 0.2s;" onmouseover="this.style.opacity='0.75'" onmouseout="this.style.opacity='1'">
+        <span>✉️</span> manuenrose.pro@gmail.com
+      </a>
+      <a href="tel:+242050568156" style="display:inline-flex; align-items:center; gap:6px; color:var(--gold); text-decoration:none; font-size:0.82rem; transition:opacity 0.2s;" onmouseover="this.style.opacity='0.75'" onmouseout="this.style.opacity='1'">
+        <span>📞</span> +242-05-056-81-56
+      </a>
+    </div>
+  </footer>
 
-            if (!selectedProjectId) {
-                alert("Veuillez sélectionner un projet avant de valider votre vote !");
-                return;
-            }
+</div><!-- /wrapper -->
 
-            const firstname = document.getElementById('firstname').value.trim();
-            const lastname = document.getElementById('lastname').value.trim();
-            const messageInput = document.getElementById('message').value.trim();
-            const fullName = `${firstname} ${lastname}`;
 
-            // Désactiver le bouton pour éviter les doubles clics accidentels
-            const submitBtn = document.getElementById('submit-btn');
-            submitBtn.disabled = true;
-            submitBtn.innerText = "Enregistrement du vote...";
+<script>
+// ============================================================
+//  ⚠️  CONFIGURATION — REMPLACE CES DEUX VALEURS
+// ============================================================
+const SUPABASE_URL = 'https://qalosmjleiylpofjgxmx.supabase.co';
+const SUPABASE_ANON_KEY = 'sb_publishable_aRigeCEdwPbIFJ_2WfF6Cg__ukcZDhK';
+// ============================================================
 
-            // Insertion réelle dans ta table Supabase
-            const { error } = await supabase
-                .from('votes')
-                .insert([
-                    { 
-                        nom_votant: fullName, 
-                        projet_vote: selectedProjectId, 
-                        suggestion: messageInput 
-                    }
-                ]);
+const { createClient } = supabase;
+const sb = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
-            if (error) {
-                alert("Une erreur est survenue lors de l'enregistrement de votre vote. Réessayez.");
-                submitBtn.disabled = false;
-                submitBtn.innerText = "Soumettre mon vote";
-                console.error(error);
-                return;
-            }
+// ---- Noms des projets (index 1-7) ----
+const PROJECT_NAMES = {
+  1: 'Santé Connectée',
+  2: 'Éducation Numérique',
+  3: 'AgriTech Congo',
+  4: 'Fintech & Paiement',
+  5: 'Énergie Intelligente',
+  6: 'e-Gouvernance',
+  7: 'Connectivité Rurale'
+};
 
-            // Sécurité anti-triche locale
-            localStorage.setItem('a_deja_vote', 'true');
-            localStorage.setItem('user_full_name', fullName);
-            localStorage.setItem('user_vote_id', selectedProjectId);
+// ---- État ----
+let selectedProjectId = null;
 
-            // Transition visuelle vers l'écran des résultats
-            document.getElementById('vote-section').classList.add('hidden');
-            document.getElementById('results-section').classList.remove('hidden');
-            window.scrollTo({ top: 0, behavior: 'smooth' });
+// ---- Éléments DOM ----
+const overlay       = document.getElementById('loading-overlay');
+const voteSection   = document.getElementById('vote-section');
+const resultsSection= document.getElementById('results-section');
+const submitBtn     = document.getElementById('submit-btn');
+const resultList    = document.getElementById('result-list');
+const feedList      = document.getElementById('feed-list');
+const totalVotesEl  = document.getElementById('total-votes');
+const toast         = document.getElementById('toast');
+let toastTimer;
 
-            // Charger immédiatement les statistiques fraîches incluant le nouveau vote
-            await fetchAndRenderStats(selectedProjectId, fullName);
-        });
+// ---- Toast ----
+function showToast(msg, type = 'info') {
+  clearTimeout(toastTimer);
+  toast.textContent = msg;
+  toast.className = `show ${type}`;
+  toastTimer = setTimeout(() => { toast.className = ''; }, 4000);
+}
 
-        // 4. ÉCOUTEUR TEMPS RÉEL (REALTIME) POUR METTRE À JOUR LES GRAPHIQUES À CHAQUE NOUVEAU VOTE D'UN TIERS
-        const channel = supabase
-            .channel('table-db-changes')
-            .on(
-                'postgres_changes',
-                { event: 'INSERT', schema: 'public', table: 'votes' },
-                (payload) => {
-                    console.log('Nouveau vote détecté en direct !', payload);
-                    const savedId = localStorage.getItem('user_vote_id') ? parseInt(localStorage.getItem('user_vote_id')) : null;
-                    const savedName = localStorage.getItem('user_full_name') || "";
-                    fetchAndRenderStats(savedId, savedName);
-                }
-            )
-            .subscribe();
+// ---- Sélection de projet ----
+document.querySelectorAll('.project-card').forEach(card => {
+  card.addEventListener('click', () => {
+    document.querySelectorAll('.project-card').forEach(c => c.classList.remove('selected'));
+    card.classList.add('selected');
+    selectedProjectId = parseInt(card.dataset.id, 10);
+    submitBtn.disabled = false;
+    submitBtn.textContent = `Voter pour : ${PROJECT_NAMES[selectedProjectId]} →`;
+  });
+});
 
-        // 5. VÉRIFICATION AU CHARGEMENT INITIAL DE LA PAGE
-        window.addEventListener('DOMContentLoaded', async () => {
-            if (localStorage.getItem('a_deja_vote') === 'true') {
-                document.getElementById('vote-section').classList.add('hidden');
-                document.getElementById('results-section').classList.remove('hidden');
-                
-                const savedId = localStorage.getItem('user_vote_id') ? parseInt(localStorage.getItem('user_vote_id')) : null;
-                const savedName = localStorage.getItem('user_full_name') || "";
-                await fetchAndRenderStats(savedId, savedName);
-            }
-        });
-    </script>
+// ---- Fetch & render stats ----
+async function fetchAndRenderStats() {
+  const myVoteId = parseInt(localStorage.getItem('user_vote_id') || '0', 10);
+
+  const { data, error } = await sb
+    .from('votes')
+    .select('projet_vote, nom_votant, created_at')
+    .order('created_at', { ascending: false });
+
+  if (error) { console.error('Stats error:', error); return; }
+
+  // Comptage
+  const counts = {};
+  for (let i = 1; i <= 7; i++) counts[i] = 0;
+  data.forEach(v => { if (counts[v.projet_vote] !== undefined) counts[v.projet_vote]++; });
+
+  const total = data.length;
+  totalVotesEl.textContent = total;
+
+  // Tri
+  const sorted = Object.entries(counts)
+    .map(([id, count]) => ({ id: parseInt(id), count }))
+    .sort((a, b) => b.count - a.count);
+
+  // Rendu barres
+  resultList.innerHTML = '';
+  sorted.forEach((proj, idx) => {
+    const pct = total > 0 ? Math.round((proj.count / total) * 100) : 0;
+    const isMyVote = proj.id === myVoteId;
+    const div = document.createElement('div');
+    div.className = `result-item${isMyVote ? ' my-vote' : ''}`;
+    div.innerHTML = `
+      <div class="result-item-header">
+        <div class="result-item-name">
+          <span class="rank-num">${idx + 1}</span>
+          <span>${PROJECT_NAMES[proj.id]}</span>
+          ${isMyVote ? '<span class="my-vote-tag">✓ Mon vote</span>' : ''}
+        </div>
+        <div class="result-meta">
+          <span class="result-count">${proj.count} vote${proj.count !== 1 ? 's' : ''}</span>
+          <span class="result-pct">${pct}%</span>
+        </div>
+      </div>
+      <div class="bar-track">
+        <div class="bar-fill" style="width: ${pct}%"></div>
+      </div>`;
+    resultList.appendChild(div);
+  });
+
+  // Feed des 10 derniers
+  feedList.innerHTML = '';
+  data.slice(0, 10).forEach(v => {
+    const initials = v.nom_votant
+      .split(' ').slice(0, 2)
+      .map(w => w[0] || '?').join('').toUpperCase();
+    const time = new Date(v.created_at).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' });
+    const item = document.createElement('div');
+    item.className = 'feed-item';
+    item.innerHTML = `
+      <div class="feed-avatar">${initials}</div>
+      <div class="feed-text">
+        <strong>${v.nom_votant}</strong>
+        <span> a voté pour </span>
+        <span class="feed-proj">${PROJECT_NAMES[v.projet_vote] || 'Projet ' + v.projet_vote}</span>
+        <span style="color:var(--muted);font-size:0.75rem"> · ${time}</span>
+      </div>`;
+    feedList.appendChild(item);
+  });
+}
+
+// ---- Soumission du vote ----
+submitBtn.addEventListener('click', async () => {
+  const firstName = document.getElementById('firstname').value.trim();
+  const lastName  = document.getElementById('lastname').value.trim();
+  const message   = document.getElementById('message-input').value.trim();
+
+  if (!firstName || !lastName) {
+    showToast('⚠️ Veuillez entrer votre prénom et votre nom.', 'error');
+    return;
+  }
+
+  if (!selectedProjectId) {
+    showToast('⚠️ Veuillez sélectionner un projet.', 'error');
+    return;
+  }
+
+  const fullName = `${firstName} ${lastName}`;
+
+  submitBtn.disabled  = true;
+  submitBtn.textContent = '⏳ Envoi en cours…';
+
+  const { error } = await sb.from('votes').insert([{
+    nom_votant:  fullName,
+    projet_vote: selectedProjectId,
+    message:     message || null
+  }]);
+
+  if (error) {
+    console.error('Insert error:', error);
+    showToast('❌ Erreur lors de l\'enregistrement. Réessayez.', 'error');
+    submitBtn.disabled  = false;
+    submitBtn.textContent = `Voter pour : ${PROJECT_NAMES[selectedProjectId]} →`;
+    return;
+  }
+
+  // Anti-triche : localStorage
+  localStorage.setItem('a_deja_vote', 'true');
+  localStorage.setItem('user_full_name', fullName);
+  localStorage.setItem('user_vote_id', selectedProjectId.toString());
+
+  showToast('✅ Vote enregistré ! Merci pour votre participation.', 'success');
+
+  // Afficher résultats
+  await fetchAndRenderStats();
+  voteSection.classList.add('hidden');
+  resultsSection.style.display = 'block';
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+});
+
+// ---- Realtime ----
+sb.channel('votes-realtime')
+  .on('postgres_changes', {
+    event:  'INSERT',
+    schema: 'public',
+    table:  'votes'
+  }, () => {
+    fetchAndRenderStats();
+    showToast('🔔 Un nouveau vote vient d\'être enregistré !', 'info');
+  })
+  .subscribe();
+
+// ---- Init ----
+document.addEventListener('DOMContentLoaded', async () => {
+  const aDejaVote = localStorage.getItem('a_deja_vote') === 'true';
+
+  await fetchAndRenderStats();
+
+  if (aDejaVote) {
+    voteSection.classList.add('hidden');
+    resultsSection.style.display = 'block';
+  }
+
+  // Masquer loading
+  setTimeout(() => overlay.classList.add('hidden'), 400);
+});
+</script>
+
 </body>
 </html>
