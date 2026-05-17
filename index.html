@@ -792,7 +792,7 @@
 
     <!-- Bouton -->
     <button class="btn-submit" id="submit-btn" disabled>
-      Sélectionnez un projet pour voter →
+      Sélectionnez au moins un projet pour voter →
     </button>
 
   </div><!-- /vote-section -->
@@ -871,7 +871,7 @@ const PROJECT_NAMES = {
 };
 
 // ---- État ----
-let selectedProjectId = null;
+let selectedProjectIds = new Set();
 
 // ---- Éléments DOM ----
 const overlay       = document.getElementById('loading-overlay');
@@ -895,17 +895,30 @@ function showToast(msg, type = 'info') {
 // ---- Sélection de projet ----
 document.querySelectorAll('.project-card').forEach(card => {
   card.addEventListener('click', () => {
-    document.querySelectorAll('.project-card').forEach(c => c.classList.remove('selected'));
-    card.classList.add('selected');
-    selectedProjectId = parseInt(card.dataset.id, 10);
-    submitBtn.disabled = false;
-    submitBtn.textContent = `Voter pour : ${PROJECT_NAMES[selectedProjectId]} →`;
+    const id = parseInt(card.dataset.id, 10);
+    if (selectedProjectIds.has(id)) {
+      selectedProjectIds.delete(id);
+      card.classList.remove('selected');
+    } else {
+      selectedProjectIds.add(id);
+      card.classList.add('selected');
+    }
+
+    if (selectedProjectIds.size > 0) {
+      submitBtn.disabled = false;
+      submitBtn.textContent = `Voter pour ${selectedProjectIds.size} projet(s) →`;
+    } else {
+      submitBtn.disabled = true;
+      submitBtn.textContent = `Sélectionnez au moins un projet pour voter →`;
+    }
   });
 });
 
 // ---- Fetch & render stats ----
 async function fetchAndRenderStats() {
-  const myVoteId = parseInt(localStorage.getItem('user_vote_id') || '0', 10);
+  const myVoteIdsStr = localStorage.getItem('user_vote_ids') || '[]';
+  let myVoteIds = [];
+  try { myVoteIds = JSON.parse(myVoteIdsStr); } catch(e) {}
 
   const { data, error } = await sb
     .from('votes')
@@ -931,7 +944,7 @@ async function fetchAndRenderStats() {
   resultList.innerHTML = '';
   sorted.forEach((proj, idx) => {
     const pct = total > 0 ? Math.round((proj.count / total) * 100) : 0;
-    const isMyVote = proj.id === myVoteId;
+    const isMyVote = myVoteIds.includes(proj.id);
     const div = document.createElement('div');
     div.className = `result-item${isMyVote ? ' my-vote' : ''}`;
     div.innerHTML = `
@@ -984,8 +997,8 @@ submitBtn.addEventListener('click', async () => {
     return;
   }
 
-  if (!selectedProjectId) {
-    showToast('⚠️ Veuillez sélectionner un projet.', 'error');
+  if (selectedProjectIds.size === 0) {
+    showToast('⚠️ Veuillez sélectionner au moins un projet.', 'error');
     return;
   }
 
@@ -994,24 +1007,26 @@ submitBtn.addEventListener('click', async () => {
   submitBtn.disabled  = true;
   submitBtn.textContent = '⏳ Envoi en cours…';
 
-  const { error } = await sb.from('votes').insert([{
+  const votesToInsert = Array.from(selectedProjectIds).map(id => ({
     nom_votant:  fullName,
-    projet_vote: selectedProjectId,
+    projet_vote: id,
     message:     message || null
-  }]);
+  }));
+
+  const { error } = await sb.from('votes').insert(votesToInsert);
 
   if (error) {
     console.error('Insert error:', error);
     showToast('❌ Erreur lors de l\'enregistrement. Réessayez.', 'error');
     submitBtn.disabled  = false;
-    submitBtn.textContent = `Voter pour : ${PROJECT_NAMES[selectedProjectId]} →`;
+    submitBtn.textContent = `Voter pour ${selectedProjectIds.size} projet(s) →`;
     return;
   }
 
   // Anti-triche : localStorage
   localStorage.setItem('a_deja_vote', 'true');
   localStorage.setItem('user_full_name', fullName);
-  localStorage.setItem('user_vote_id', selectedProjectId.toString());
+  localStorage.setItem('user_vote_ids', JSON.stringify(Array.from(selectedProjectIds)));
 
   showToast('✅ Vote enregistré ! Merci pour votre participation.', 'success');
 
