@@ -845,7 +845,7 @@
     </div>
   </footer>
 
-</div><!-- /wrapper -->
+</div><!-- /wrapper --> 
 
 
 <script>
@@ -974,14 +974,53 @@ async function fetchAndRenderStats() {
     const time = new Date(v.created_at).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' });
     const item = document.createElement('div');
     item.className = 'feed-item';
-    item.innerHTML = `
-      <div class="feed-avatar">${initials}</div>
-      <div class="feed-text">
-        <strong>${v.nom_votant}</strong>
-        <span> a voté pour </span>
-        <span class="feed-proj">${PROJECT_NAMES[v.projet_vote] || 'Projet ' + v.projet_vote}</span>
-        <span style="color:var(--muted);font-size:0.75rem"> · ${time}</span>
-      </div>`;
+    // Feed des 10 derniers (Version sécurisée 🔐)
+  feedList.innerHTML = '';
+  data.slice(0, 10).forEach(v => {
+    const initials = v.nom_votant
+      .split(' ').slice(0, 2)
+      .map(w => w[0] || '?').join('').toUpperCase();
+    const time = new Date(v.created_at).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' });
+    
+    // 1. Créer le conteneur principal
+    const item = document.createElement('div');
+    item.className = 'feed-item';
+    
+    // 2. Créer l'avatar
+    const avatarEl = document.createElement('div');
+    avatarEl.className = 'feed-avatar';
+    avatarEl.textContent = initials;
+    
+    // 3. Créer la zone de texte sécurisée
+    const textEl = document.createElement('div');
+    textEl.className = 'feed-text';
+    
+    const nameEl = document.createElement('strong');
+    nameEl.textContent = v.nom_votant; // 🛡️ textContent neutralise les balises <img...
+    
+    const textSpan = document.createElement('span');
+    textSpan.textContent = ' a voté pour ';
+    
+    const projSpan = document.createElement('span');
+    projSpan.className = 'feed-proj';
+    projSpan.textContent = PROJECT_NAMES[v.projet_vote] || 'Projet ' + v.projet_vote;
+    
+    const timeSpan = document.createElement('span');
+    timeSpan.style.color = 'var(--muted)';
+    timeSpan.style.fontSize = '0.75rem';
+    timeSpan.textContent = ` · ${time}`;
+    
+    // 4. Assembler le tout
+    textEl.appendChild(nameEl);
+    textEl.appendChild(textSpan);
+    textEl.appendChild(projSpan);
+    textEl.appendChild(timeSpan);
+    
+    item.appendChild(avatarEl);
+    item.appendChild(textEl);
+    
+    feedList.appendChild(item);
+  });
     feedList.appendChild(item);
   });
 }
